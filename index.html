@@ -247,6 +247,83 @@
   .rival-bar-track{flex:1;height:8px;border-radius:999px;background:rgba(245,232,211,0.12);overflow:hidden;}
   .rival-bar-fill{height:100%;border-radius:999px;transition:width 0.4s ease;}
   .rival-name{font-family:system-ui,sans-serif;font-size:12px;color:var(--cream);opacity:0.75;width:72px;flex-shrink:0;}
+
+  /* Players drawer */
+  .players-toggle-wrap{position:relative;z-index:1;display:flex;justify-content:center;padding:2px 16px 4px;}
+  .btn-players{
+    font-family:system-ui,sans-serif;font-weight:700;font-size:15px;
+    padding:10px 20px;border-radius:999px;
+    border:1.5px solid rgba(217,164,65,0.55);background:rgba(217,164,65,0.08);
+    color:var(--gold-light);transition:transform 150ms ease, background 150ms ease;
+  }
+  .btn-players:active{transform:scale(0.96);}
+  .drawer-backdrop{
+    position:fixed;inset:0;background:rgba(15,4,4,0.55);backdrop-filter:blur(2px);
+    z-index:20;opacity:0;pointer-events:none;transition:opacity 250ms ease;
+  }
+  .drawer-backdrop.open{opacity:1;pointer-events:auto;}
+  .players-drawer{
+    position:fixed;top:0;right:0;height:100%;width:340px;max-width:88vw;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.04)),
+      radial-gradient(ellipse 100% 40% at 50% 0%, #6B2429, var(--bg-dark));
+    border-left:1px solid rgba(217,164,65,0.4);
+    box-shadow:-16px 0 40px rgba(0,0,0,0.5);
+    z-index:21;transform:translateX(100%);transition:transform 300ms cubic-bezier(.34,1.2,.64,1);
+    display:flex;flex-direction:column;
+    font-family:system-ui,sans-serif;color:var(--cream);
+  }
+  .players-drawer.open{transform:translateX(0);}
+  .drawer-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 18px 14px;border-bottom:1px solid rgba(217,164,65,0.3);
+  }
+  .drawer-title{
+    font-family:Georgia,serif;font-size:22px;letter-spacing:1px;color:var(--gold-light);
+  }
+  .drawer-close{
+    width:34px;height:34px;border-radius:50%;border:1px solid rgba(217,164,65,0.4);
+    background:rgba(217,164,65,0.08);color:var(--gold-light);font-size:18px;line-height:1;
+  }
+  .drawer-body{flex:1;overflow-y:auto;padding:14px 16px 20px;}
+  .player-row{
+    padding:12px 4px;border-bottom:1px solid rgba(217,164,65,0.18);
+  }
+  .player-row:last-of-type{border-bottom:none;}
+  .player-name-input{
+    width:100%;font-family:Georgia,serif;font-size:16px;font-weight:600;
+    background:rgba(0,0,0,0.18);border:1px solid rgba(217,164,65,0.3);border-radius:8px;
+    color:var(--cream);padding:8px 10px;margin-bottom:8px;
+  }
+  .player-name-input:focus{outline:none;border-color:var(--gold);}
+  .player-actions{display:flex;gap:8px;align-items:center;}
+  .action-btn{
+    position:relative;flex:1;font-weight:700;font-size:14px;padding:10px 8px;
+    border-radius:10px;border:1.5px solid rgba(217,164,65,0.4);background:rgba(217,164,65,0.05);
+    color:var(--gold-light);transition:transform 120ms ease, background 150ms ease, box-shadow 150ms ease;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .action-btn:active{transform:scale(0.94);}
+  .action-btn .badge{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:18px;height:18px;padding:0 4px;border-radius:999px;
+    background:rgba(0,0,0,0.25);font-size:11px;font-weight:800;
+  }
+  .action-btn.flash{
+    background:linear-gradient(180deg,var(--gold-light),var(--accent));color:var(--ink);
+    box-shadow:0 0 14px rgba(217,164,65,0.5);border-color:var(--gold-light);
+  }
+  .action-btn.flash .badge{background:rgba(58,17,8,0.25);color:var(--ink);}
+  .add-player-btn{
+    width:100%;margin-top:14px;padding:13px;border-radius:12px;
+    border:1.5px dashed rgba(217,164,65,0.5);background:transparent;color:var(--gold-light);
+    font-weight:700;font-size:15px;transition:transform 150ms ease, background 150ms ease;
+  }
+  .add-player-btn:active{transform:scale(0.97);}
+  .add-player-btn:disabled{opacity:0.4;}
+  .players-max-note{
+    text-align:center;font-size:13px;color:var(--gold);opacity:0.75;margin-top:10px;
+  }
 </style>
 </head>
 <body>
@@ -290,6 +367,23 @@
 <section class="board-wrap">
   <div id="boardGrid" class="board-grid"></div>
 </section>
+
+<section class="players-toggle-wrap">
+  <button id="btnPlayers" class="btn-players">👥 Jugadores</button>
+</section>
+
+<div id="drawerBackdrop" class="drawer-backdrop"></div>
+<aside id="playersDrawer" class="players-drawer">
+  <div class="drawer-header">
+    <div class="drawer-title">Jugadores</div>
+    <button id="drawerClose" class="drawer-close">×</button>
+  </div>
+  <div class="drawer-body">
+    <div id="playerRows"></div>
+    <button id="addPlayerBtn" class="add-player-btn">+ Agregar jugador</button>
+    <div id="maxPlayersNote" class="players-max-note" style="display:none;">20 jugadores máximo</div>
+  </div>
+</aside>
 
 <section class="rivals">
   <div class="rivals-title">Rivales</div>
@@ -401,6 +495,14 @@ let autoTimer = null;
 let rivalProgress = RIVAL_NAMES.map(() => 0);
 let status = 'playing';
 
+// Player score panel state
+let players = [
+  { name: 'Jugador 1', chorro: 0, buena: 0 },
+  { name: 'Jugador 2', chorro: 0, buena: 0 },
+  { name: 'Jugador 3', chorro: 0, buena: 0 },
+];
+const MAX_PLAYERS = 20;
+
 const els = {
   cardFrame: document.getElementById('cardFrame'),
   spotlightImg: document.getElementById('spotlightImg'),
@@ -414,7 +516,71 @@ const els = {
   strip: document.getElementById('strip'),
   boardGrid: document.getElementById('boardGrid'),
   rivalsList: document.getElementById('rivalsList'),
+  btnPlayers: document.getElementById('btnPlayers'),
+  drawerBackdrop: document.getElementById('drawerBackdrop'),
+  playersDrawer: document.getElementById('playersDrawer'),
+  drawerClose: document.getElementById('drawerClose'),
+  playerRows: document.getElementById('playerRows'),
+  addPlayerBtn: document.getElementById('addPlayerBtn'),
+  maxPlayersNote: document.getElementById('maxPlayersNote'),
 };
+
+function renderPlayers(){
+  els.playerRows.innerHTML = '';
+  players.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `
+      <input class="player-name-input" type="text" value="${p.name.replace(/"/g,'&quot;')}" placeholder="Jugador ${i+1}" data-idx="${i}" />
+      <div class="player-actions">
+        <button class="action-btn" data-action="chorro" data-idx="${i}">Chorro <span class="badge">${p.chorro}</span></button>
+        <button class="action-btn" data-action="buena" data-idx="${i}">Buena <span class="badge">${p.buena}</span></button>
+      </div>
+    `;
+    els.playerRows.appendChild(row);
+  });
+
+  els.playerRows.querySelectorAll('.player-name-input').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const idx = Number(e.target.dataset.idx);
+      players[idx].name = e.target.value;
+    });
+  });
+
+  els.playerRows.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = Number(btn.dataset.idx);
+      const action = btn.dataset.action;
+      players[idx][action]++;
+      btn.classList.add('flash');
+      setTimeout(() => btn.classList.remove('flash'), 260);
+      const badge = btn.querySelector('.badge');
+      if(badge) badge.textContent = players[idx][action];
+    });
+  });
+
+  els.addPlayerBtn.disabled = players.length >= MAX_PLAYERS;
+  els.maxPlayersNote.style.display = players.length >= MAX_PLAYERS ? 'block' : 'none';
+}
+
+els.btnPlayers.addEventListener('click', () => {
+  els.playersDrawer.classList.add('open');
+  els.drawerBackdrop.classList.add('open');
+});
+function closeDrawer(){
+  els.playersDrawer.classList.remove('open');
+  els.drawerBackdrop.classList.remove('open');
+}
+els.drawerClose.addEventListener('click', closeDrawer);
+els.drawerBackdrop.addEventListener('click', closeDrawer);
+
+els.addPlayerBtn.addEventListener('click', () => {
+  if(players.length >= MAX_PLAYERS) return;
+  players.push({ name: `Jugador ${players.length + 1}`, chorro: 0, buena: 0 });
+  renderPlayers();
+});
+
+renderPlayers();
 
 function calledSet(){
   return new Set(gameDeck.slice(0, calledIdx).map(c => c.n));
