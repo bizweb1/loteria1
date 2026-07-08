@@ -324,6 +324,89 @@
   .players-max-note{
     text-align:center;font-size:13px;color:var(--gold);opacity:0.75;margin-top:10px;
   }
+
+  /* Scoreboard — detached, always-visible panel */
+  .scoreboard-panel{
+    position:relative;z-index:2;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.04)),
+      radial-gradient(ellipse 100% 60% at 50% 0%, #6B2429, var(--bg-dark));
+    border:1px solid rgba(217,164,65,0.4);
+    border-radius:18px;
+    box-shadow:0 14px 30px rgba(0,0,0,0.4);
+    padding:16px 16px 14px;
+    margin:0 16px 14px;
+    font-family:system-ui,sans-serif;color:var(--cream);
+  }
+  .scoreboard-title{
+    font-family:Georgia,serif;font-size:18px;color:var(--gold-light);
+    display:flex;align-items:center;gap:6px;margin-bottom:10px;
+  }
+  .scoreboard-empty{font-size:13px;color:var(--cream);opacity:0.55;font-style:italic;}
+  .scoreboard-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.15);margin-bottom:6px;
+    font-size:13px;
+  }
+  .scoreboard-row .sb-name{font-weight:700;color:var(--cream);}
+  .scoreboard-row .sb-stats{color:var(--gold-light);font-size:12px;white-space:nowrap;}
+
+  .drawer-tools{display:flex;gap:8px;margin-top:16px;}
+  .tool-btn{
+    flex:1;font-family:system-ui,sans-serif;font-weight:600;font-size:13px;
+    padding:11px 8px;border-radius:10px;border:1px solid rgba(217,164,65,0.35);
+    background:rgba(217,164,65,0.06);color:var(--gold-light);
+    transition:transform 150ms ease, background 150ms ease;
+  }
+  .tool-btn:active{transform:scale(0.96);}
+  .tool-btn.danger{border-color:rgba(200,90,70,0.5);color:#E8A78A;}
+  .tool-btn.danger:active{background:rgba(200,90,70,0.15);}
+
+  /* Printable report (hidden on screen, shown only on print) */
+  #printReport{display:none;}
+  @media print{
+    body::before, body::after, .scallop, header, .players-toggle-wrap,
+    .app-main, #drawerBackdrop, .players-drawer, .scoreboard-panel{ display:none !important; }
+    body{background:#fff !important;}
+    #printReport{
+      display:block !important;color:#2A0C0C;font-family:Georgia,serif;padding:20px;
+    }
+    #printReport h2{margin:0 0 4px;}
+    #printReport .pr-date{font-size:12px;color:#555;margin-bottom:18px;}
+    #printReport table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;}
+    #printReport th,#printReport td{border:1px solid #999;padding:6px 8px;text-align:left;}
+    #printReport th{background:#eee;}
+  }
+
+  /* Layout wrapper */
+  .app-layout{
+    position:relative;
+    display:flex;flex-direction:column;align-items:stretch;
+    gap:0;max-width:1280px;margin:0 auto;
+  }
+  .app-main{flex:1;min-width:0;max-width:640px;margin:0 auto;width:100%;}
+  .sidebar-col{display:flex;flex-direction:column;gap:0;width:100%;}
+
+  /* Desktop / tablet: scoreboard + player panel become a persistent sidebar next to the card */
+  @media (min-width: 860px){
+    .app-layout{flex-direction:row;gap:28px;padding:0 20px;justify-content:center;align-items:flex-start;}
+    .players-toggle-wrap{display:none;}
+    .drawer-backdrop{display:none;}
+    .sidebar-col{
+      position:sticky;top:24px;width:320px;flex-shrink:0;gap:16px;margin-top:22px;
+    }
+    .scoreboard-panel{margin:0;}
+    .players-drawer{
+      position:static;
+      transform:none;height:auto;max-height:none;
+      width:100%;flex-shrink:0;
+      box-shadow:0 20px 44px rgba(0,0,0,0.4);
+      border-radius:20px;border:1px solid rgba(217,164,65,0.4);
+      margin:0;
+      display:flex;
+    }
+    .drawer-close{display:none;}
+  }
 </style>
 </head>
 <body>
@@ -335,60 +418,79 @@
   <p class="subtitle"><span class="flourish">──✦──</span> ¡Se va, se va…! <span class="flourish">──✦──</span></p>
 </header>
 
-<section class="spotlight">
-  <div class="burst-wrap">
-    <div class="burst"></div>
-    <div class="glow-ring"></div>
-    <div id="cardFrame" class="card-frame">
-      <img id="spotlightImg" class="spotlight-img" style="display:none;" />
-      <div id="spotlightEmpty" class="spotlight-empty">
-        <span style="font-size:40px;">🎴</span>
-        <span style="font-size:13px;margin-top:6px;">Presiona "Cantar"</span>
-      </div>
-    </div>
-  </div>
-  <div id="soundBars" class="sound-bars"><span></span><span></span><span></span><span></span><span></span></div>
-  <div class="spotlight-meta">
-    <div id="spotlightName" class="spotlight-name">—</div>
-    <div class="deck-badge"><span class="dot"></span><span id="deckCount">54 Cartas Restantes</span></div>
-  </div>
-</section>
-
-<section class="controls">
-  <button id="btnCall" class="btn-primary">🔊 Cantar carta</button>
-  <button id="btnAuto" class="btn-ghost">▶ Automático</button>
-  <button id="btnNew" class="btn-tertiary">🔄 Nuevo juego</button>
-</section>
-
-<div id="winBanner" class="win-banner">¡LOTERÍA! 🎉 ¡Tabla llena!</div>
-
-<section id="strip" class="strip"></section>
-
-<section class="board-wrap">
-  <div id="boardGrid" class="board-grid"></div>
-</section>
-
 <section class="players-toggle-wrap">
   <button id="btnPlayers" class="btn-players">👥 Jugadores</button>
 </section>
 
-<div id="drawerBackdrop" class="drawer-backdrop"></div>
-<aside id="playersDrawer" class="players-drawer">
-  <div class="drawer-header">
-    <div class="drawer-title">Jugadores</div>
-    <button id="drawerClose" class="drawer-close">×</button>
-  </div>
-  <div class="drawer-body">
-    <div id="playerRows"></div>
-    <button id="addPlayerBtn" class="add-player-btn">+ Agregar jugador</button>
-    <div id="maxPlayersNote" class="players-max-note" style="display:none;">20 jugadores máximo</div>
-  </div>
-</aside>
+<div class="app-layout">
+  <div class="app-main">
 
-<section class="rivals">
-  <div class="rivals-title">Rivales</div>
-  <div id="rivalsList" class="rivals-list"></div>
-</section>
+    <section class="spotlight">
+      <div class="burst-wrap">
+        <div class="burst"></div>
+        <div class="glow-ring"></div>
+        <div id="cardFrame" class="card-frame">
+          <img id="spotlightImg" class="spotlight-img" style="display:none;" />
+          <div id="spotlightEmpty" class="spotlight-empty">
+            <span style="font-size:40px;">🎴</span>
+            <span style="font-size:13px;margin-top:6px;">Presiona "Cantar"</span>
+          </div>
+        </div>
+      </div>
+      <div id="soundBars" class="sound-bars"><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="spotlight-meta">
+        <div id="spotlightName" class="spotlight-name">—</div>
+        <div class="deck-badge"><span class="dot"></span><span id="deckCount">54 Cartas Restantes</span></div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <button id="btnCall" class="btn-primary">🔊 Cantar carta</button>
+      <button id="btnAuto" class="btn-ghost">▶ Automático</button>
+      <button id="btnNew" class="btn-tertiary">🔄 Nuevo juego</button>
+    </section>
+
+    <div id="winBanner" class="win-banner">¡LOTERÍA! 🎉 ¡Tabla llena!</div>
+
+    <section id="strip" class="strip"></section>
+
+    <section class="board-wrap">
+      <div id="boardGrid" class="board-grid"></div>
+    </section>
+
+    <section class="rivals">
+      <div class="rivals-title">Rivales</div>
+      <div id="rivalsList" class="rivals-list"></div>
+    </section>
+
+  </div>
+
+  <div class="sidebar-col">
+    <aside class="scoreboard-panel">
+      <div class="scoreboard-title">🏆 Marcador</div>
+      <div id="scoreboardList"></div>
+    </aside>
+
+    <div id="drawerBackdrop" class="drawer-backdrop"></div>
+    <aside id="playersDrawer" class="players-drawer">
+      <div class="drawer-header">
+        <div class="drawer-title">Jugadores</div>
+        <button id="drawerClose" class="drawer-close">×</button>
+      </div>
+      <div class="drawer-body">
+        <div id="playerRows"></div>
+        <button id="addPlayerBtn" class="add-player-btn">+ Agregar jugador</button>
+        <div id="maxPlayersNote" class="players-max-note" style="display:none;">20 jugadores máximo</div>
+        <div class="drawer-tools">
+          <button id="reportBtn" class="tool-btn">🖨️ Generar reporte</button>
+          <button id="clearHistoryBtn" class="tool-btn danger">🗑️ Borrar historial</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div id="printReport"></div>
 
 <script>
 // ---------------------------------------------------------------------------
@@ -502,6 +604,7 @@ let players = [
   { name: 'Jugador 3', chorro: 0, buena: 0 },
 ];
 const MAX_PLAYERS = 20;
+let history = []; // { name, action, ts }
 
 const els = {
   cardFrame: document.getElementById('cardFrame'),
@@ -523,7 +626,29 @@ const els = {
   playerRows: document.getElementById('playerRows'),
   addPlayerBtn: document.getElementById('addPlayerBtn'),
   maxPlayersNote: document.getElementById('maxPlayersNote'),
+  scoreboardList: document.getElementById('scoreboardList'),
+  reportBtn: document.getElementById('reportBtn'),
+  clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+  printReport: document.getElementById('printReport'),
 };
+
+function renderScoreboard(){
+  const withTotals = players
+    .map(p => ({ name: p.name || 'Sin nombre', chorro: p.chorro, buena: p.buena, total: p.chorro + p.buena }))
+    .filter(p => p.total > 0)
+    .sort((a,b) => b.total - a.total);
+
+  if(withTotals.length === 0){
+    els.scoreboardList.innerHTML = '<div class="scoreboard-empty">Aún no hay jugadas registradas.</div>';
+    return;
+  }
+  els.scoreboardList.innerHTML = withTotals.map(p => `
+    <div class="scoreboard-row">
+      <span class="sb-name">${p.name}</span>
+      <span class="sb-stats">Chorro: ${p.chorro} · Buena: ${p.buena}</span>
+    </div>
+  `).join('');
+}
 
 function renderPlayers(){
   els.playerRows.innerHTML = '';
@@ -544,6 +669,7 @@ function renderPlayers(){
     input.addEventListener('input', (e) => {
       const idx = Number(e.target.dataset.idx);
       players[idx].name = e.target.value;
+      renderScoreboard();
     });
   });
 
@@ -552,16 +678,63 @@ function renderPlayers(){
       const idx = Number(btn.dataset.idx);
       const action = btn.dataset.action;
       players[idx][action]++;
+      history.push({
+        name: players[idx].name || `Jugador ${idx+1}`,
+        action: action === 'chorro' ? 'Chorro' : 'Buena',
+        ts: Date.now(),
+      });
       btn.classList.add('flash');
       setTimeout(() => btn.classList.remove('flash'), 260);
       const badge = btn.querySelector('.badge');
       if(badge) badge.textContent = players[idx][action];
+      renderScoreboard();
     });
   });
 
   els.addPlayerBtn.disabled = players.length >= MAX_PLAYERS;
   els.maxPlayersNote.style.display = players.length >= MAX_PLAYERS ? 'block' : 'none';
+  renderScoreboard();
 }
+
+function buildAndPrintReport(){
+  const now = new Date();
+  const totals = players
+    .map(p => ({ name: p.name || 'Sin nombre', chorro: p.chorro, buena: p.buena, total: p.chorro + p.buena }))
+    .sort((a,b) => b.total - a.total);
+
+  const totalsRows = totals.map(p => `
+    <tr><td>${p.name}</td><td>${p.chorro}</td><td>${p.buena}</td><td>${p.total}</td></tr>
+  `).join('') || '<tr><td colspan="4">Sin jugadas registradas</td></tr>';
+
+  const historyRows = history.map((h, i) => `
+    <tr><td>${i+1}</td><td>${h.name}</td><td>${h.action}</td><td>${new Date(h.ts).toLocaleTimeString('es-MX')}</td></tr>
+  `).join('') || '<tr><td colspan="4">Sin historial todavía</td></tr>';
+
+  els.printReport.innerHTML = `
+    <h2>Reporte de Lotería</h2>
+    <div class="pr-date">Generado: ${now.toLocaleString('es-MX')}</div>
+    <h3>Marcador final</h3>
+    <table>
+      <thead><tr><th>Jugador</th><th>Chorro</th><th>Buena</th><th>Total</th></tr></thead>
+      <tbody>${totalsRows}</tbody>
+    </table>
+    <h3>Historial de jugadas</h3>
+    <table>
+      <thead><tr><th>#</th><th>Jugador</th><th>Acción</th><th>Hora</th></tr></thead>
+      <tbody>${historyRows}</tbody>
+    </table>
+  `;
+  window.print();
+}
+
+els.reportBtn.addEventListener('click', buildAndPrintReport);
+
+els.clearHistoryBtn.addEventListener('click', () => {
+  if(!confirm('¿Borrar todo el historial y los marcadores de los jugadores?')) return;
+  history = [];
+  players.forEach(p => { p.chorro = 0; p.buena = 0; });
+  renderPlayers();
+});
 
 els.btnPlayers.addEventListener('click', () => {
   els.playersDrawer.classList.add('open');
